@@ -6,8 +6,6 @@
 ### draft of january 2022 ###
 
 ### setup ###
-### others will comment the following line out ###
-setwd('~/Dropbox/COVID/')
 
 ### packages ###
 

@@ -49,7 +49,7 @@ make_thisweek_fig <- function(w){ # the main function, takes the week as input
     coord_map("bonne",parameters=35) + # choose map coordinates
     theme_void()+ # ditch everything that's not the map axis lines, ticks, etc.
     labs(x='',y='',fill="", # labels
-         title=paste("Average (reported) new COVID cases/100k/day, past ",w," days, by county",sep=''),
+         title="Average (reported) new COVID cases/100k/day, past 7 days, by county",
          subtitle = paste("Week ending ", dt,sep='')) +
     theme(legend.position=c(0.9,0.5)) +
     geom_path(data=stshapes, # notice this is a different dataset that i'm pulling data from
@@ -86,8 +86,7 @@ stshapes <- as_tibble(map_data('state')) %>% # same dance except w/states
   filter(region %in% c('alaska','hawaii')==FALSE) %>% # get rid of AK, HI (sorry)
   left_join(.,f)
 
-# the next two lines are inefficient, but they work 
-# haven't figured out a better way yet.
+# the next two lines are uhhhhh legacy, but they work
 cntyshapes$fips <- unlist(lapply(cntyshapes$fips,fips2))
 stshapes$fips <- unlist(lapply(stshapes$fips,fips2))
 

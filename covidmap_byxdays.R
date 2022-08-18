@@ -1,6 +1,7 @@
 ### covidmap_byxdays.R ###
 ### creates a US map of covid rates at the county level
 ### for each week since late january 2020
+### these can then be animated
 
 ### amelia hoover green ###
 ### draft of january 2022 ###
@@ -56,7 +57,7 @@ make_thisweek_fig <- function(w){ # the main function, takes the week as input
               aes(x=long,y=lat,group=group),
               color='white',lwd=0.25)
   
-  if(nchar(w)==1) w <- paste('0',w,sep='') # this is so that the files get saved in order; makes later animation easier
+  while(nchar(w)<3) w <- paste('0',w,sep='') # this is so that the files get saved in order; makes later animation easier
 
   ggsave(paste('covidmap_images/covidmap_week',w,'.png',sep=''),
          height=3.5,width=7,dpi=150,
@@ -87,10 +88,15 @@ stshapes <- as_tibble(map_data('state')) %>% # same dance except w/states
   left_join(.,f)
 
 # the next two lines are uhhhhh legacy, but they work
+# TODO (2022-01): probably need to Vectorize() the fips2 function above
+# and incorporate with the mutates above
+# but have not tested this yet!
+
 cntyshapes$fips <- unlist(lapply(cntyshapes$fips,fips2))
 stshapes$fips <- unlist(lapply(stshapes$fips,fips2))
 
 # covid data #
+# TODO (2022-06): consider alternate methods of reading as data get bigger #
 print('getting COVID data')
 cnty2020 <- read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/rolling-averages/us-counties-2020.csv')
 cnty2021 <- read_csv('https://raw.githubusercontent.com/nytimes/covid-19-data/master/rolling-averages/us-counties-2021.csv')
@@ -104,19 +110,23 @@ cnty$fips[cnty$county=='New York City'] <- 36061
 
 cnty <- 
   mutate(cnty,
-         day=cut_interval(ymd(date),days,labels=c(1:days)), # using the number of days and weeks we calcuated above,
-         week=cut_interval(ymd(date),weeks,labels=c(1:weeks))) %>% # get the day and week we're on now.
+         day=cut_interval(ymd(date),days,labels=c(1:days)), # using the # of days, wks
+         week=cut_interval(ymd(date),weeks,labels=c(1:weeks))) %>% # get current day, wk
   group_by(fips,week) %>% # group by county and week
   summarize(new_cases_per100k=max(cases_avg_per_100k,na.rm=TRUE), # use the highest rolling average from this county*week
             end_date=max(date,na.rm=TRUE)) %>% # use the final day of the week
   ungroup() %>%
-  group_by(week) %>%
+  group_by(week) %>% # group by week to find percentiles
   mutate(pctile.01=quantile(new_cases_per100k,0.01,na.rm=TRUE),
          pctile.99=quantile(new_cases_per100k,0.99,na.rm=TRUE)) %>%
   ungroup() %>%
   mutate(nc_correct=ifelse(new_cases_per100k>250,250,new_cases_per100k),
          nc_correct=ifelse(is.na(nc_correct),0,nc_correct)) 
-  
+
+# TODO (2022-06): Use gganimate instead of making all these individually
+# although they are kind of fun
+# errrrr "FUN"
+
 for(i in 1:weeks) {
   print(paste("Making graph for period",i))
   make_thisweek_fig(i)
